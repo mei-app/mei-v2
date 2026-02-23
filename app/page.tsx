@@ -59,8 +59,8 @@ function ImageColumn({ images, offset }: { images: FeaturedProduct[]; offset: nu
 
 export default function HomePage() {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
   const [products, setProducts] = useState<FeaturedProduct[]>([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch("/api/featured")
@@ -69,11 +69,16 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const handleCopyLink = async () => {
+  const handleSendToFriends = async () => {
+    const url = window.location.origin;
     try {
-      await navigator.clipboard.writeText(window.location.origin);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (navigator.share) {
+        await navigator.share({ title: "mei", text: "style me on mei!", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch {}
   };
 
@@ -225,7 +230,7 @@ export default function HomePage() {
           className="flex flex-col items-center gap-3 w-full max-w-xs"
         >
           <motion.div variants={fadeUp} className="w-full">
-            <Button variant="outline" size="lg" onClick={handleCopyLink}>
+            <Button variant="outline" size="lg" onClick={handleSendToFriends}>
               {copied ? "link copied!" : "send mei to friends"}
             </Button>
           </motion.div>

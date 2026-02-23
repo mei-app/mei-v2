@@ -21,7 +21,6 @@ export default function ResultsClient({
   const [session, setSession] = useState<Session | null>(null);
   const [likedItems, setLikedItems] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shared, setShared] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -48,6 +47,8 @@ export default function ResultsClient({
     load();
   }, [sessionId]);
 
+  const [shared, setShared] = useState(false);
+
   const handleShare = async () => {
     const url = window.location.href;
     const stylistName = session?.stylist_name;
@@ -57,13 +58,15 @@ export default function ResultsClient({
     const text = stylistName
       ? `${stylistName}, here are the looks i loved from the list you made me!`
       : `here are the looks i loved on mei!`;
-    if (navigator.share) {
-      await navigator.share({ title, text, url });
-    } else {
-      await navigator.clipboard.writeText(`${window.location.href}`);
-      setShared(true);
-      setTimeout(() => setShared(false), 2000);
-    }
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      }
+    } catch {}
   };
 
   if (loading) {
