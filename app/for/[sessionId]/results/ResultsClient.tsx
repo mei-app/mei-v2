@@ -105,24 +105,22 @@ export default function ResultsClient({
         </motion.div>
 
         {/* Send results back CTA */}
-        {session?.stylist_name && (
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            className="mb-10 p-5 border-2 border-black text-center"
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="mb-10 p-5 border-2 border-black text-center"
+        >
+          <p className="font-heading font-bold text-sm mb-3">
+            {session?.stylist_name ? `send results to ${session.stylist_name}` : "share your results"}
+          </p>
+          <button
+            onClick={handleShare}
+            className="font-heading font-black text-base px-6 py-3 bg-black text-white hover:bg-[#7C3AED] transition-colors"
           >
-            <p className="font-heading font-bold text-sm mb-3">
-              send results to {session.stylist_name}
-            </p>
-            <button
-              onClick={handleShare}
-              className="font-heading font-black text-base px-6 py-3 bg-black text-white hover:bg-[#7C3AED] transition-colors"
-            >
-              {shared ? "link copied!" : "share my results"}
-            </button>
-          </motion.div>
-        )}
+            {shared ? "link copied!" : "share my results"}
+          </button>
+        </motion.div>
 
         {/* Liked items grid */}
         {likedItems.length > 0 && (
