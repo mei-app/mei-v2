@@ -265,8 +265,6 @@ export default function ListPageClient({
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Centered content wrapper */}
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
       {/* Header */}
       <div className="px-6 pt-10 pb-6 border-b border-black/10">
         <p className="text-xs font-bold uppercase tracking-widest text-black/40 mb-2">mei</p>
@@ -283,7 +281,7 @@ export default function ListPageClient({
           <p className="text-black/50 text-sm">items will appear here once they're added</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, padding: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, padding: 16 }}>
           {items.map((item) => (
             <button
               key={item.id}
@@ -339,7 +337,6 @@ export default function ListPageClient({
           ))}
         </div>
       )}
-      </div>{/* end centered wrapper */}
 
       {/* Item detail overlay */}
       {selectedItem && (
