@@ -360,7 +360,8 @@ export default function ListPageClient({
               alt={selectedItem.title ?? ""}
               width={600}
               height={600}
-              className="w-full object-cover max-h-72 shrink-0"
+              className="w-full object-contain shrink-0"
+            style={{ maxHeight: "55vh", background: "#f5f5f5" }}
               unoptimized
             />
           ) : (
