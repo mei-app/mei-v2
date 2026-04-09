@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import ListPageClient from "./ListPageClient";
 
 export type ItemWithCounts = {
@@ -21,7 +21,7 @@ export default async function ListPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   const { data: share } = await supabase
     .from("list_shares")

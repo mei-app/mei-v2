@@ -89,7 +89,7 @@ export default function ListDetailScreen() {
     if (!share) { Alert.alert("Error", "couldn't generate invite link"); return; }
 
     const apiUrl = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/$/, "");
-    const token = String(share.token).match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0] ?? String(share.token);
+    const token = String(share.token).slice(0, 36);
     const link = `${apiUrl}/list/${token}`;
     await Clipboard.setStringAsync(link);
     setShareCopied(true);
