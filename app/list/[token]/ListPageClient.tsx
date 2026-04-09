@@ -281,7 +281,7 @@ export default function ListPageClient({
           <p className="text-black/50 text-sm">items will appear here once they're added</p>
         </div>
       ) : (
-        <div className="p-6 grid grid-cols-2 gap-4 max-w-lg mx-auto">
+        <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((item) => (
             <button
               key={item.id}
@@ -340,30 +340,33 @@ export default function ListPageClient({
 
       {/* Item detail overlay */}
       {selectedItem && (
-        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
-          <button
-            onClick={() => setSelectedItem(null)}
-            className="fixed top-4 left-4 z-10 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-xl shadow-sm"
-          >
-            ←
-          </button>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-center justify-center">
+          <div className="bg-white w-full md:max-w-lg md:max-h-[90vh] max-h-[92vh] overflow-y-auto flex flex-col">
+          <div className="flex items-center px-4 pt-4 pb-2 shrink-0">
+            <button
+              onClick={() => setSelectedItem(null)}
+              className="text-xl font-bold mr-3"
+            >
+              ←
+            </button>
+          </div>
 
           {selectedItem.image_url ? (
             <Image
               src={selectedItem.image_url}
               alt={selectedItem.title ?? ""}
               width={600}
-              height={750}
-              className="w-full object-cover aspect-[4/5]"
+              height={600}
+              className="w-full object-cover max-h-72 shrink-0"
               unoptimized
             />
           ) : (
-            <div className="w-full aspect-[4/5] bg-black/5 flex items-center justify-center">
+            <div className="w-full h-48 bg-black/5 flex items-center justify-center shrink-0">
               <span className="text-6xl text-black/20">🛍</span>
             </div>
           )}
 
-          <div className="px-6 pt-5 pb-36">
+          <div className="px-6 pt-5 pb-28 overflow-y-auto">
             {selectedItem.brand && (
               <p className="text-xs text-black/40 uppercase tracking-wider mb-1">
                 {selectedItem.brand}
@@ -415,7 +418,7 @@ export default function ListPageClient({
           </div>
 
           {/* Comment input */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-black/10 px-4 py-3 flex gap-3 items-center">
+          <div className="shrink-0 bg-white border-t border-black/10 px-4 py-3 flex gap-3 items-center">
             <input
               type="text"
               placeholder="leave feedback..."
@@ -439,6 +442,7 @@ export default function ListPageClient({
             >
               {postingComment ? "..." : "send"}
             </button>
+          </div>
           </div>
         </div>
       )}
