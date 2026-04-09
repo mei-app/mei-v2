@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
@@ -29,6 +30,9 @@ export default function ListDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const nameInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     fetchListAndItems();
@@ -96,6 +100,14 @@ export default function ListDetailScreen() {
     setTimeout(() => setShareCopied(false), 2500);
   };
 
+  const saveListName = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === list?.name) { setEditingName(false); return; }
+    await supabase.from("lists").update({ name: trimmed }).eq("id", listId);
+    setList((prev) => prev ? { ...prev, name: trimmed } : prev);
+    setEditingName(false);
+  };
+
   const deleteItem = (id: string) => {
     Alert.alert("remove item?", "this can't be undone", [
       { text: "cancel", style: "cancel" },
@@ -128,9 +140,31 @@ export default function ListDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
           <Text className="text-2xl">←</Text>
         </TouchableOpacity>
-        <Text className="text-2xl font-black flex-1" numberOfLines={1}>
-          {list?.name}
-        </Text>
+        {editingName ? (
+          <TextInput
+            ref={nameInputRef}
+            className="text-2xl font-black flex-1 border-b-2 border-black pb-0.5"
+            value={nameInput}
+            onChangeText={setNameInput}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={saveListName}
+            onBlur={saveListName}
+          />
+        ) : (
+          <TouchableOpacity
+            className="flex-1"
+            onPress={() => {
+              setNameInput(list?.name ?? "");
+              setEditingName(true);
+            }}
+            hitSlop={8}
+          >
+            <Text className="text-2xl font-black" numberOfLines={1}>
+              {list?.name}
+            </Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity onPress={handleShare} disabled={sharing} hitSlop={8}>
           {sharing ? (
             <ActivityIndicator size="small" color="#000" />
