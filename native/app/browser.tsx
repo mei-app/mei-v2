@@ -100,7 +100,6 @@ export default function BrowserScreen() {
   const [displayUrl, setDisplayUrl] = useState(initialUrl); // only updated on load end
   const [urlBarText, setUrlBarText] = useState(initialUrl);
   const [isEditingUrl, setIsEditingUrl] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   // Add to list sheet
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -252,11 +251,7 @@ export default function BrowserScreen() {
           )}
 
           <TouchableOpacity onPress={() => webViewRef.current?.reload()} hitSlop={12}>
-            {loading ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : (
-              <Text className="text-base">↻</Text>
-            )}
+            <Text className="text-base">↻</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -266,9 +261,7 @@ export default function BrowserScreen() {
         ref={webViewRef}
         source={{ uri: displayUrl }}
         style={{ flex: 1 }}
-        onLoadStart={() => setLoading(true)}
         onLoadEnd={(e) => {
-          setLoading(false);
           const url = e.nativeEvent.url;
           if (url) {
             currentUrlRef.current = url;
@@ -279,6 +272,10 @@ export default function BrowserScreen() {
         allowsBackForwardNavigationGestures
         sharedCookiesEnabled
         javaScriptEnabled
+        domStorageEnabled
+        cacheEnabled
+        cacheMode="LOAD_CACHE_ELSE_NETWORK"
+        pullToRefreshEnabled
       />
 
       {/* Add to List floating button */}
