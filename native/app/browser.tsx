@@ -96,7 +96,8 @@ export default function BrowserScreen() {
 
   // Browser state
   const webViewRef = useRef<WebView>(null);
-  const [currentUrl, setCurrentUrl] = useState(initialUrl);
+  const currentUrlRef = useRef(initialUrl); // ref = no re-render on every navigation event
+  const [displayUrl, setDisplayUrl] = useState(initialUrl); // only updated on load end
   const [urlBarText, setUrlBarText] = useState(initialUrl);
   const [isEditingUrl, setIsEditingUrl] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -116,19 +117,20 @@ export default function BrowserScreen() {
 
   const handleNavigate = (input: string) => {
     const url = toNavigationUrl(input);
-    setCurrentUrl(url);
+    currentUrlRef.current = url;
+    setDisplayUrl(url);
     setUrlBarText(url);
     setIsEditingUrl(false);
   };
 
-  // Receive messages from injected JS
+  // Receive messages from injected JS — uses ref so no re-render dependency
   const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
       if (msg.type === "metadata" && metadataResolverRef.current) {
         const domain = (() => {
           try {
-            return new URL(currentUrl).hostname.replace(/^www\./, "").split(".")[0];
+            return new URL(currentUrlRef.current).hostname.replace(/^www\./, "").split(".")[0];
           } catch { return null; }
         })();
         const brand = msg.brand ?? (domain
@@ -143,7 +145,7 @@ export default function BrowserScreen() {
         metadataResolverRef.current = null;
       }
     } catch {}
-  }, [currentUrl]);
+  }, []); // no deps — reads from ref
 
   const extractMetadata = (): Promise<ParsedPreview> =>
     new Promise((resolve) => {
@@ -152,7 +154,7 @@ export default function BrowserScreen() {
     });
 
   const handleAddToList = useCallback(async () => {
-    setCapturedUrl(currentUrl);
+    setCapturedUrl(currentUrlRef.current);
     setPreview(null);
     setSaved(false);
     setSheetVisible(true);
@@ -174,7 +176,7 @@ export default function BrowserScreen() {
       setLists(listsData);
       if (listsData.length === 1) setSelectedListId(listsData[0].id);
     }
-  }, [currentUrl, presetListId]);
+  }, [presetListId]);
 
   const saveItem = async () => {
     const listId = presetListId ?? selectedListId;
@@ -232,19 +234,19 @@ export default function BrowserScreen() {
               onSubmitEditing={() => handleNavigate(urlBarText)}
               onBlur={() => {
                 setIsEditingUrl(false);
-                setUrlBarText(currentUrl);
+                setUrlBarText(currentUrlRef.current);
               }}
             />
           ) : (
             <TouchableOpacity
               className="flex-1 bg-black/5 px-3 py-1.5 rounded"
               onPress={() => {
-                setUrlBarText(currentUrl);
+                setUrlBarText(currentUrlRef.current);
                 setIsEditingUrl(true);
               }}
             >
               <Text className="text-sm text-black/60" numberOfLines={1}>
-                {currentUrl.replace(/^https?:\/\/(www\.)?/, "")}
+                {urlBarText.replace(/^https?:\/\/(www\.)?/, "")}
               </Text>
             </TouchableOpacity>
           )}
@@ -262,17 +264,17 @@ export default function BrowserScreen() {
       {/* WebView */}
       <WebView
         ref={webViewRef}
-        source={{ uri: currentUrl }}
+        source={{ uri: displayUrl }}
         style={{ flex: 1 }}
-        onNavigationStateChange={(state) => {
-          if (state.url && state.url !== currentUrl) {
-            setCurrentUrl(state.url);
-            if (!isEditingUrl) setUrlBarText(state.url);
-          }
-          setLoading(state.loading);
-        }}
         onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
+        onLoadEnd={(e) => {
+          setLoading(false);
+          const url = e.nativeEvent.url;
+          if (url) {
+            currentUrlRef.current = url;
+            if (!isEditingUrl) setUrlBarText(url);
+          }
+        }}
         onMessage={handleWebViewMessage}
         allowsBackForwardNavigationGestures
         sharedCookiesEnabled
