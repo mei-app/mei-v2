@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -87,6 +87,39 @@ type ParsedPreview = {
   price: string | null;
   brand: string | null;
 };
+
+// Isolated memoized WebView — never re-renders when sheet/modal state changes
+const BrowserWebView = memo(function BrowserWebView({
+  webViewRef,
+  displayUrl,
+  currentUrlRef,
+  onMessage,
+}: {
+  webViewRef: React.RefObject<WebView>;
+  displayUrl: string;
+  currentUrlRef: React.MutableRefObject<string>;
+  onMessage: (e: WebViewMessageEvent) => void;
+}) {
+  return (
+    <WebView
+      ref={webViewRef}
+      source={{ uri: displayUrl }}
+      style={{ flex: 1 }}
+      onLoadEnd={(e) => {
+        const url = e.nativeEvent.url;
+        if (url) currentUrlRef.current = url;
+      }}
+      onMessage={onMessage}
+      allowsBackForwardNavigationGestures
+      sharedCookiesEnabled
+      javaScriptEnabled
+      domStorageEnabled
+      cacheEnabled
+      cacheMode="LOAD_CACHE_ELSE_NETWORK"
+      pullToRefreshEnabled
+    />
+  );
+});
 
 export default function BrowserScreen() {
   const router = useRouter();
@@ -256,26 +289,12 @@ export default function BrowserScreen() {
         </View>
       </SafeAreaView>
 
-      {/* WebView */}
-      <WebView
-        ref={webViewRef}
-        source={{ uri: displayUrl }}
-        style={{ flex: 1 }}
-        onLoadEnd={(e) => {
-          const url = e.nativeEvent.url;
-          if (url) {
-            currentUrlRef.current = url;
-            if (!isEditingUrl) setUrlBarText(url);
-          }
-        }}
+      {/* WebView — memoized so sheet state changes don't remount/rerender it */}
+      <BrowserWebView
+        webViewRef={webViewRef}
+        displayUrl={displayUrl}
+        currentUrlRef={currentUrlRef}
         onMessage={handleWebViewMessage}
-        allowsBackForwardNavigationGestures
-        sharedCookiesEnabled
-        javaScriptEnabled
-        domStorageEnabled
-        cacheEnabled
-        cacheMode="LOAD_CACHE_ELSE_NETWORK"
-        pullToRefreshEnabled
       />
 
       {/* Add to List floating button */}
