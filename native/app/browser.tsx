@@ -30,26 +30,34 @@ const EXTRACT_METADATA_JS = `
   }
 
   var title = meta('og:title') || document.title || null;
-  var image = meta('og:image') || null;
+  var image = meta('og:image') || meta('og:image:url') || meta('twitter:image') || meta('twitter:image:src') || null;
   var brand = meta('og:site_name') || null;
   var price = meta('product:price:amount') || meta('og:price:amount') || null;
 
-  // JSON-LD structured data for price
-  if (!price) {
+  // JSON-LD structured data for image + price
+  if (!image || !price) {
     var scripts = document.querySelectorAll('script[type="application/ld+json"]');
     for (var i = 0; i < scripts.length; i++) {
       try {
         var data = JSON.parse(scripts[i].textContent);
         var nodes = Array.isArray(data) ? data : (data['@graph'] ? data['@graph'] : [data]);
         for (var j = 0; j < nodes.length; j++) {
-          var offers = nodes[j].offers;
-          if (offers) {
+          var node = nodes[j];
+          // Image from JSON-LD
+          if (!image && node.image) {
+            var img = Array.isArray(node.image) ? node.image[0] : node.image;
+            if (typeof img === 'string') image = img;
+            else if (img && img.url) image = img.url;
+          }
+          // Price from JSON-LD
+          if (!price && node.offers) {
+            var offers = node.offers;
             var p = Array.isArray(offers) ? (offers[0] && offers[0].price) : offers.price;
-            if (p != null) { price = String(p); break; }
+            if (p != null) price = String(p);
           }
         }
       } catch(e) {}
-      if (price) break;
+      if (image && price) break;
     }
   }
 
@@ -60,6 +68,26 @@ const EXTRACT_METADATA_JS = `
     if (priceEl) {
       price = (priceEl.getAttribute('content') || priceEl.getAttribute('data-price') || priceEl.innerText || '').replace(/[^0-9.]/g, '') || null;
     }
+  }
+
+  // Fallback: find the largest visible product image on the page
+  if (!image) {
+    var imgs = document.querySelectorAll('img[src]');
+    var bestSrc = null, bestArea = 0;
+    for (var k = 0; k < imgs.length; k++) {
+      var img = imgs[k];
+      var src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
+      if (!src || src.indexOf('data:') === 0 || src.indexOf('svg') !== -1) continue;
+      // Skip tiny icons/logos
+      var w = img.naturalWidth || img.width || 0;
+      var h = img.naturalHeight || img.height || 0;
+      var area = w * h;
+      if (area > bestArea && w > 100 && h > 100) {
+        bestArea = area;
+        bestSrc = src.startsWith('http') ? src : (src.startsWith('//') ? 'https:' + src : null);
+      }
+    }
+    if (bestSrc) image = bestSrc;
   }
 
   window.ReactNativeWebView.postMessage(JSON.stringify({
