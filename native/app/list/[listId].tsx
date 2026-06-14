@@ -19,8 +19,41 @@ import type { List, ListItem } from "@/lib/types";
 
 const ITEM_GAP = 12;
 const SIDE_PADDING = 24;
-
+const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 type ItemWithCounts = ListItem & { likeCount: number; commentCount: number };
+
+function ItemImage({
+  item,
+  itemWidth,
+  onRefresh,
+}: {
+  item: ItemWithCounts;
+  itemWidth: number;
+  onRefresh: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  if (item.image_url && !imgError) {
+    return (
+      <Image
+        source={{ uri: item.image_url }}
+        style={{ width: itemWidth, height: itemWidth * 1.25 }}
+        contentFit="cover"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  return (
+    <TouchableOpacity
+      style={{ width: itemWidth, height: itemWidth * 1.25 }}
+      className="bg-black/5 items-center justify-center gap-2"
+      onPress={onRefresh}
+    >
+      <Text className="text-black/20 text-4xl">🛍</Text>
+      <Text className="text-black/30 text-xs">tap to load image</Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function ListDetailScreen() {
   const { listId } = useLocalSearchParams<{ listId: string }>();
@@ -61,15 +94,39 @@ export default function ListDetailScreen() {
       (likesData ?? []).forEach((l) => { likeCounts[l.item_id] = (likeCounts[l.item_id] ?? 0) + 1; });
       (commentsData ?? []).forEach((c) => { commentCounts[c.item_id] = (commentCounts[c.item_id] ?? 0) + 1; });
 
-      setItems(itemsData.map((item) => ({
+      const mapped = itemsData.map((item) => ({
         ...item,
         likeCount: likeCounts[item.id] ?? 0,
         commentCount: commentCounts[item.id] ?? 0,
-      })));
+      }));
+      setItems(mapped);
+      setLoading(false);
+
+      // Background: auto-fetch images for items that are missing one
+      const missing = mapped.filter((i) => !i.image_url && i.url);
+      missing.forEach(async (item) => {
+        try {
+          const res = await fetch(
+            `${API_URL}/api/parse-url?url=${encodeURIComponent(item.url!)}`
+          );
+          const data = await res.json();
+          if (data.image_url) {
+            await supabase
+              .from("list_items")
+              .update({ image_url: data.image_url })
+              .eq("id", item.id);
+            setItems((prev) =>
+              prev.map((i) =>
+                i.id === item.id ? { ...i, image_url: data.image_url } : i
+              )
+            );
+          }
+        } catch {}
+      });
     } else {
       setItems([]);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleShare = async () => {
@@ -121,6 +178,7 @@ export default function ListDetailScreen() {
       },
     ]);
   };
+
 
   const { width } = Dimensions.get("window");
   const itemWidth = (width - SIDE_PADDING * 2 - ITEM_GAP) / 2;
@@ -281,20 +339,16 @@ export default function ListDetailScreen() {
                 </View>
               ) : null}
 
-              {item.image_url ? (
-                <Image
-                  source={{ uri: item.image_url }}
-                  style={{ width: itemWidth, height: itemWidth * 1.25 }}
-                  contentFit="cover"
-                />
-              ) : (
-                <View
-                  style={{ width: itemWidth, height: itemWidth * 1.25 }}
-                  className="bg-black/5 items-center justify-center"
-                >
-                  <Text className="text-black/20 text-4xl">🛍</Text>
-                </View>
-              )}
+              <ItemImage
+                item={item}
+                itemWidth={itemWidth}
+                onRefresh={() =>
+                  router.push({
+                    pathname: "/browser",
+                    params: { url: item.url ?? "https://www.google.com", refreshItemId: item.id },
+                  })
+                }
+              />
               <View className="mt-2 gap-0.5">
                 {item.brand ? (
                   <Text className="text-xs text-black/40 uppercase tracking-wider" numberOfLines={1}>

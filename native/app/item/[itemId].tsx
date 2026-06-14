@@ -30,6 +30,7 @@ export default function ItemDetailScreen() {
   const [comments, setComments] = useState<(ItemComment & { display_name: string })[]>([]);
   const [memberId, setMemberIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshingImage, setRefreshingImage] = useState(false);
 
   // Name prompt state (for users without a member identity yet)
   const [namePromptVisible, setNamePromptVisible] = useState(false);
@@ -183,6 +184,25 @@ export default function ItemDetailScreen() {
     setTimeout(() => commentInputRef.current?.focus(), 100);
   };
 
+  const refreshImage = async () => {
+    if (!item?.url) return;
+    setRefreshingImage(true);
+    try {
+      const apiUrl = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+      const res = await fetch(`${apiUrl}/api/parse-url?url=${encodeURIComponent(item.url)}`);
+      const data = await res.json();
+      if (data.image_url) {
+        await supabase.from("list_items").update({ image_url: data.image_url }).eq("id", item.id);
+        setItem((prev) => prev ? { ...prev, image_url: data.image_url } : prev);
+      } else {
+        Alert.alert("couldn't find image", "try opening the item in the browser and re-adding it");
+      }
+    } catch {
+      Alert.alert("error", "failed to refresh image");
+    }
+    setRefreshingImage(false);
+  };
+
   const postComment = async () => {
     if (!commentText.trim()) return;
     if (!requireIdentity("comment")) return;
@@ -248,9 +268,21 @@ export default function ItemDetailScreen() {
           ) : (
             <View
               style={{ width, height: width * 1.1 }}
-              className="bg-black/5 items-center justify-center"
+              className="bg-black/5 items-center justify-center gap-3"
             >
               <Text className="text-black/20 text-6xl">🛍</Text>
+              <TouchableOpacity
+                onPress={refreshImage}
+                disabled={refreshingImage}
+                className="border border-black/20 px-4 py-2"
+                style={{ opacity: refreshingImage ? 0.4 : 1 }}
+              >
+                {refreshingImage ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <Text className="text-sm text-black/50">refresh image</Text>
+                )}
+              </TouchableOpacity>
             </View>
           )}
 
